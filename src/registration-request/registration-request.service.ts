@@ -26,6 +26,16 @@ export class RegistrationRequestService {
     return this.prisma.registrationRequest.findMany();
   }
 
+
+
+  async findAccepted() {
+    return this.prisma.registrationRequest.findMany({
+      where: {
+        accepted: true,
+      },
+    });
+  }
+
   async findById(id: number) {
     return this.prisma.registrationRequest.findUnique({
       where: {

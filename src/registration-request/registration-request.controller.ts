@@ -9,7 +9,8 @@ import { join } from 'path';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ConflictException } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import * as bcrypt from 'bcrypt';
+import { Readable } from 'stream';
+
 
 
 
@@ -106,6 +107,45 @@ export class RegistrationRequestController {
     return this.registrationRequest.update(Number(id), registrationRequest);
   }
 
+
+
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/export')
+  async exportAcceptedRequests(@Res() res: Response) {
+    try {
+      const acceptedRequests = await this.registrationRequest.findAccepted();
+
+      const csvData = this.convertToCSV(acceptedRequests);
+      const filename = 'accepted_registration_requests.csv';
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      const stream = Readable.from(csvData);
+
+      stream.pipe(res);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  private convertToCSV(data: any[]): string {
+    const header = ['Name', 'NID', 'DOB', 'Email', 'Faculty', 'Phone Number'];
+
+    const rows = data.map((request) => [
+      request.name,
+      request.nid,
+      request.dob,
+      request.email,
+      request.faculty,
+      request.phone_number,
+    ]);
+
+    const csv = [header, ...rows].map((row) => row.join(',')).join('\n');
+    return csv;
+  }
 
 
 }
